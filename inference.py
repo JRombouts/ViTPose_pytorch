@@ -1,3 +1,4 @@
+import importlib
 import argparse
 import os.path as osp
 
@@ -79,11 +80,28 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
     parser.add_argument('--image-path', nargs='+', type=str, default='examples/sample.jpg', help='image path(s)')
+    parser.add_argument(
+        "--model_size",
+        choices=["base", "large", "huge"],
+        type=str,
+        default="large",
+        help="model type to use",
+    )
     args = parser.parse_args()
-    
-    CUR_DIR = osp.dirname(__file__)
-    # CKPT_PATH = f"{CUR_DIR}/vitpose-b-multi-coco.pth"
-    CKPT_PATH = "/home/jaehyun/workspace/PoseEstimation/ViTPose_pytorch/runs/train/002/epoch010.pth"
+
+    mapper = {"large": "l", "huge": "h", "base": "b"}
+
+    CKPT_PATH = f"/data/vit_pose/vitpose-{mapper[args.model_size]}-multi-coco.pth"
+
+    data_cfg = getattr(
+        importlib.import_module(f"configs.ViTPose_{args.model_size}_coco_256x192"),
+        "data_cfg",
+    )
+    model_cfg = getattr(
+        importlib.import_module(f"configs.ViTPose_{args.model_size}_coco_256x192"),
+        "model",
+    )
+
     
     img_size = data_cfg['image_size']
     if type(args.image_path) != list:
