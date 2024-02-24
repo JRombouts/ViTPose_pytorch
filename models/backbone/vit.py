@@ -167,13 +167,20 @@ class Attention(nn.Module):
         qkv = qkv.reshape(B, N, 3, self.num_heads, -1).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[2]   # make torchscript happy (cannot use tensor as tuple)
 
+        # with torch.backends.cuda.sdp_kernel(enable_math=False):
+        #     attn = nn.functional.scaled_dot_product_attention(q, k, v, scale=self.scale)
+        #
+
         q = q * self.scale
         attn = (q @ k.transpose(-2, -1))
-
+        # #
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
 
+        # breakpoint()
+
         x = (attn @ v).transpose(1, 2).reshape(B, N, -1)
+        #x = attn.transpose(1,2).reshape(B, N, -1)
         x = self.proj(x)
         x = self.proj_drop(x)
 
@@ -188,6 +195,8 @@ class Block(nn.Module):
         super().__init__()
         
         self.norm1 = norm_layer(dim)
+
+
         self.attn = Attention(
             dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale,
             attn_drop=attn_drop, proj_drop=drop, attn_head_dim=attn_head_dim
